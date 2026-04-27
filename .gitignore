@@ -1,0 +1,28 @@
+# Secrets — NEVER commit
+secrets.local.md
+*.local.md
+.env
+.env.*
+!.env.example
+
+# n8n local data / exports with credentials
+n8n_data/
+*.credentials.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node / Python (in case you scaffold helpers later)
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
