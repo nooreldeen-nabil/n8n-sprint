@@ -2,7 +2,7 @@
 
 **Sprint start date:** 2026-04-22
 **Target launch date:** 2026-05-06
-**Current day:** Day 2 (2026-04-27) — Day 1 complete
+**Current day:** Day 3 (2026-05-01) — Days 1–2 complete
 
 ---
 
@@ -57,13 +57,25 @@ Format per day:
 
 ---
 
-## Day 2 — Data transformation + HTTP + error handling
+## Day 2 — Data transformation + HTTP + error handling ✅
 
-- **Hours worked:**
+- **Date:** 2026-04-30
+- **Hours worked:** 4
 - **Completed:**
-- **Blocked on:**
-- **Tomorrow:**
+  - n8n "Data transformation" + Expressions + Code node docs read end-to-end
+  - **`day2-weather` workflow built and activated:** Schedule (every 6h) → HTTP Request (Open-Meteo current weather, Cairo) → Code node (flatten nested `current.*` into a flat object) → Telegram (DM via `@n8n_AI_Automation_Sprint_bot`)
+  - **Error branch wired:** HTTP node Settings → On Error = `Continue (using error output)` → second Telegram node alerts on failure. Verified by temporarily pointing URL at `/v1/nope` and confirming alert fired
+  - Workflow saved, activated, schedule confirmed firing in Executions tab
+  - **30-min REST API checkpoint passed:** rebuilt the same shape against Frankfurter (`api.frankfurter.dev/v1/latest?base=USD`) — no signup, ECB rates
+  - **Soft-error If node added** to the Frankfurter flow: API returns 200 OK with `success: false` on bad input, which the HTTP error branch wouldn't catch. If node on `{{ $json.success }} === true` routes to error Telegram on false. Real-world pattern locked in
+- **Blocked on:** none (resolved mid-day — see notes)
+- **Tomorrow:** Day 3 — install ngrok, set `WEBHOOK_URL` env, build Form-to-Sheets intake (webhook → validate → Google Sheets → Telegram), configure Google Sheets OAuth2
 - **Notes:**
+  - **OpenWeather inaccessible from Egypt:** marketing site `openweathermap.org` returns `ERR_CONNECTION_REFUSED` on both home WiFi and mobile data (likely ISP-level DNS block of that specific domain — `api.openweathermap.org` itself was reachable and returned a clean 401). Pivoted to Open-Meteo (keyless) instead of burning time on a VPN signup. No Day 2 skill lost — same HTTP/transform/error patterns practiced
+  - **Telegram chat ID gotcha:** initially pasted the full `https://api.telegram.org/bot<TOKEN>/...` URL into the Chat ID field and the node silently returned Telegram's HTML landing page. Chat ID must be the numeric ID (from `getUpdates` after DMing the bot once)
+  - **Bot token leak + rotation:** original token was visible in a screenshot during debugging. Revoked via BotFather `/revoke`, new token updated in n8n credential and `secrets.local.md`
+  - **exchangerate.host now requires an access key** — switched checkpoint API to Frankfurter
+  - **Lesson — letter vs spirit of the deliverable:** plan asked for an HTTP-level error branch (letter); real APIs return 200 + `success:false` payloads (spirit). The soft-error If node is the part that separates $40/hr from $100/hr work
 
 ---
 
