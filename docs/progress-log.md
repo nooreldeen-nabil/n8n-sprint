@@ -2,7 +2,7 @@
 
 **Sprint start date:** 2026-04-22
 **Target launch date:** 2026-05-06
-**Current day:** Day 3 (2026-05-01) — Days 1–2 complete
+**Current day:** Day 4 (2026-05-04) — Days 1–3 complete
 
 ---
 
@@ -79,13 +79,31 @@ Format per day:
 
 ---
 
-## Day 3 — Webhooks + credentials + ngrok
+## Day 3 — Webhooks + credentials + ngrok ✅
 
-- **Hours worked:**
+- **Date:** 2026-04-30
+- **Hours worked:** 8
 - **Completed:**
-- **Blocked on:**
-- **Tomorrow:**
+  - ngrok installed and authenticated; agent updated from 3.3.1 → 3.39.1 to clear `ERR_NGROK_121` (free tier minimum agent version)
+  - Public tunnel up: `https://provable-credibly-june.ngrok-free.dev` → `localhost:5678`
+  - n8n restarted with `WEBHOOK_URL` so Webhook nodes advertise the public URL; smoke test passed (curl → 200, execution captured payload in 38ms)
+  - Google Cloud project `n8n-sprint` created; Sheets API + Drive API enabled; OAuth consent screen wired (External, self as test user); OAuth Web client created with `http://localhost:5678/rest/oauth2-credential/callback` redirect
+  - Google Sheets OAuth2 credential connected in n8n; full Sheets + Drive scopes granted
+  - **`day3-intake-form` workflow built and activated:** Webhook (POST `/intake`, "Respond: Using 'Respond to Webhook' node") → If (email regex + required fields) → [TRUE] Google Sheets append → Telegram confirm → Respond (200, `{"ok":true}`) / [FALSE] Telegram alert → Respond (400, `{"error":"invalid payload"}`)
+  - Target sheet `n8n-sprint - intake` created with `timestamp | name | email | message` headers
+  - End-to-end test passed: valid POST → 200 + sheet row + Telegram ping; invalid POST (missing email) → 400 + Telegram alert + sheet untouched
+  - **Security checkpoint passed:** four-layer model written up in `docs/security-notes.md` (HMAC/bearer/path-secret auth, IP allowlist + Origin/CORS, rate-limit-at-proxy, payload validation). Day 3 workflow currently only implements Layer 4 — that's flagged in the doc
+  - Helper script `start-n8n.bat` saved at sprint root: prompts for ngrok URL, runs the docker command with the right env vars
+- **Blocked on:** none (resolved mid-day — see notes)
+- **Tomorrow:** Day 4 — install Ollama, pull `llama3.2` + `nomic-embed-text`, build email classifier (Ollama vs Gemini Flash vs Groq comparison), force JSON schema with structured output parser
 - **Notes:**
+  - **ngrok agent version (`ERR_NGROK_121`):** free tier requires agent ≥ 3.20.0; installed v3.3.1 was rejected. Fixed by reinstalling fresh from ngrok.com. Authtoken persists, no re-auth needed
+  - **OAuth redirect URL flipped to ngrok host:** initially set `N8N_HOST` + `N8N_PROTOCOL` env vars to make the editor reachable through ngrok — side effect was that the OAuth Redirect URL in the Sheets credential modal showed the ngrok host, which would have meant updating Google Console every time the ngrok URL rotated. Removing those vars wasn't enough — `WEBHOOK_URL` alone in n8n 1.x is treated as the editor's public base URL too
+  - **Real fix — split the URLs:** added `N8N_EDITOR_BASE_URL=http://localhost:5678/` alongside `WEBHOOK_URL=<ngrok>`. Editor + OAuth callbacks pinned to localhost (registered once in Google Console, never rotates), webhook nodes still advertise ngrok publicly. Survives ngrok URL changes for the rest of the sprint with zero rework. **This is the pattern to remember for any local-dev OAuth on n8n + ngrok**
+  - **OAuth lesson — auth happens once, tokens live forever:** even if redirect URI mismatches in future, the saved access/refresh tokens keep working for ongoing API calls. Redirect URI only matters at the moment of clicking "Sign in with Google". Useful escape hatch if Google Console gets out of sync
+  - **Google Cloud Console UI changed** — what used to be "OAuth consent screen" + "Credentials → OAuth client ID" is now "Google Auth Platform" wizard + "Clients". Same outcome, new flow. Documented for future me
+  - **Webhook node "Respond: Immediately" can't return custom status codes** — caller gets the configured Response Code (default 200) before any downstream nodes run. To return a real 400 on validation failure, switch the Webhook node to "Respond: Using 'Respond to Webhook' node" and put a Respond node on every terminal branch (TRUE and FALSE) — otherwise the caller hangs
+  - **Lesson — letter vs spirit, again:** plan said "validate input." Letter = If node with regex (which we built). Spirit = the four-layer security model that a real client expects to hear. The write-up in `security-notes.md` is the part that turns this into a deliverable I can sell, not just a workflow that runs
 
 ---
 
